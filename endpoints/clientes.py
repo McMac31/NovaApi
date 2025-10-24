@@ -6,7 +6,6 @@ clientesPlano= Blueprint('clientes', __name__)
 odoo=conexionOdoo()
 
 #Metodos HTTP
-
 #Metodo GET para ver clientes 
 @clientesPlano.route("/clientes",methods=["GET"])
 def listadoCliente():

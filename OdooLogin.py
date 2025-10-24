@@ -26,10 +26,11 @@ class conexionOdoo: #Clase de conexion
     #Metodo para obtener lista de clientes
     def get_clientes(self):
         uid= self.login()
+        filtroCliente=[('customer_rank', '>', 0)] #Filtra para que busque solo clientes
         return self.models.execute_kw(self.db,self.uid,self.password,
         'res.partner', #Busca dentro de clientes
         'search_read', #Metodo para buscar y leer clientes
-        [[]],
+        [filtroCliente],
         {'fields':['name', 'email']}) #Campos a buscar
     
     #Metodo para añadir cliente
@@ -37,7 +38,8 @@ class conexionOdoo: #Clase de conexion
         uid= self.login()
         nuevo_cliente={ #Metemos los datos a ingresar 
             'name':f'{nombre}',
-            'email':f'{email}'
+            'email':f'{email}',
+            'customer_rank': 1 #Defino que es un cliente
         }
         return self.models.execute_kw(self.db,self.uid,self.password,
         'res.partner',
@@ -48,6 +50,14 @@ class conexionOdoo: #Clase de conexion
     #Metodo para actualizar valor
     def actualizar_cliente(self,id, valores: dict):
         uid= self.login()
+        filtroCliente=[('id', '=', id), ('customer_rank', '>', 0)] #Filtro para que solo modifique clientes
+        clientes = self.models.execute_kw(
+        self.db, uid, self.password,
+        'res.partner', 'search',
+        [filtroCliente]
+        )
+        if not clientes:
+            return False
         return self.models.execute_kw(self.db, self.uid,self.password,
                  'res.partner', 'write',
                  [[id], valores])
@@ -55,6 +65,14 @@ class conexionOdoo: #Clase de conexion
     #Metodo para eliminar clientes por id
     def eliminar_cliente(self,id):
         uid= self.login()
+        filtroCliente=[('id', '=', id), ('customer_rank', '>', 0)] #Filtro para que solo acepte clientes
+        clientes = self.models.execute_kw(
+        self.db, uid, self.password,
+        'res.partner', 'search',
+        [filtroCliente] #Verifica que si sea un cliente
+        )
+        if not clientes:
+            return False
         return self.models.execute_kw(self.db,self.uid,self.password,
         'res.partner',
         'unlink',
