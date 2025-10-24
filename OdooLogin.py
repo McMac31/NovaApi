@@ -1,5 +1,5 @@
-import xmlrpc.client
-import ssl
+import xmlrpc.client #Uso de import para conectar a odoo
+import ssl #Importacion para ignorar el ssl
 
 #Campos de enlace usuario, base de datos, contraseña
 url = "https://odootechsolutions.duckdns.org/"
@@ -9,7 +9,7 @@ password = "password"
 
 context = ssl._create_unverified_context() #Ignora el ssl
 
-class conexionOdoo:
+class conexionOdoo: #Clase de conexion
     def __init__(self):
         self.db=db
         self.username=username
