@@ -1,5 +1,6 @@
 import xmlrpc.client #Uso de import para conectar a odoo
 import ssl #Importacion para ignorar el ssl
+from datetime import datetime
 
 #Campos de enlace usuario, base de datos, contraseña
 url = "https://odootechsolutions.duckdns.org/"
@@ -78,9 +79,101 @@ class conexionOdoo: #Clase de conexion
         'unlink',
         [[id]]                             
         )
-        
-
-        
     
+#CONTACTOS
+#Ver contactos
+    def get_contactos(self):
+        uid= self.login()
+        return self.models.execute_kw(self.db,self.uid,self.password,
+        'res.partner', #Busca dentro de contactos
+        'search_read', #Metodo para buscar y leer contactos
+        [[]],
+        {'fields':['name', 'email']}) #Campos a buscar
+    
+       #Metodo para añadir cliente
+    def add_contacto(self,nombre,email): #Coge datos de entrada para añadir un nuevo contacto
+        uid= self.login()
+        nuevo_contacto={ #Metemos los datos a ingresar 
+            'name':f'{nombre}',
+            'email':f'{email}'
+        }
+        return self.models.execute_kw(self.db,self.uid,self.password,
+        'res.partner',
+        'create', #Metodo para crear cliente
+        [nuevo_contacto]
+        )
+    
+        #Metodo para actualizar contacto
+    def actualizar_contacto(self,id, valores: dict):
+        uid= self.login()
+        return self.models.execute_kw(self.db, self.uid,self.password,
+                 'res.partner', 'write',
+                 [[id], valores])
+    
+    #Metodo para eliminar contacto por id
+    def eliminar_contacto(self,id):
+        uid= self.login()
+        return self.models.execute_kw(self.db,self.uid,self.password,
+        'res.partner',
+        'unlink',
+        [[id]]                             
+        )
+    
+    #Metodo para ver las ventas del mes
+    def get_NumventasMes(self,mes,year): #Filtro por fecha y año de ventas del mes
+        uid=self.login()
+        hoy=datetime.now() 
+        if not mes: #Controlo por si no se ingresa ninguna fecha ni año 
+            mes=hoy.month
+        if not year:
+            year=hoy.year
+        fechaInicio=f"{year}-{mes:02d}-01"#Le indico y formateo desde que fecha quiero iniciar
+        fechaFin=f"{year}-{mes:02d}-31"
+        filtroVentas=[('date_order', '>=', fechaInicio), ('date_order', '<=', fechaFin)] #Filtro las fechas de pedidos
+        camposVenta=['id','name', 'partner_id', 'date_order', 'amount_total', 'state']
+        
+        ventas=self.models.execute_kw(
+            self.db,self.uid,self.password,
+            'sale.order','search_read',
+            [filtroVentas],
+            {'fields': camposVenta}
+        )
+        return len(ventas)
+    
+    def get_totalFacturado(self):
+        uid=self.login()
+        campoVenta=['amount_total','state']
+        filtroFacturado = [('invoice_status', '=', 'invoiced')]
+        facturado= self.models.execute_kw(
+            self.db,self.uid,self.password,
+            'sale.order','search_read',
+            [filtroFacturado],
+            {'fields': campoVenta}
+        )
+        total=sum(f['amount_total']for f in facturado)
+        return total
+
+    
+    def get_pedidosPendientes(self):
+        uid=self.login()
+        camposVenta=['id','name', 'partner_id', 'date_order', 'amount_total', 'state']
+        filtroEstado=[('state','in',['sale','sale'])]
+        pedidosPdnts= self.models.execute_kw(
+            self.db, self.uid, self.password,
+            'sale.order','search_read',
+            [filtroEstado],
+            {'fields': camposVenta}
+        )
+        return pedidosPdnts
+
+    def get_prodStockBajo(self):
+        uid = self.login()
+        campos = ['id','name','qty_available']
+        return self.models.execute_kw(
+        self.db, uid, self.password,
+        'product.product', 'search_read',
+        [[('qty_available', '<=', 2)]],
+        {'fields': campos})
+                
 
     
