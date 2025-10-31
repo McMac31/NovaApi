@@ -3,7 +3,7 @@ import ssl #Importacion para ignorar el ssl
 from datetime import datetime
 
 #Campos de enlace usuario, base de datos, contraseña
-url = "https://odootechsolutions.duckdns.org/"
+url = "https://odootechsolutions.duckdns.org"
 db = "techsolutions_db"
 username = "ikyemendez24@lhusurbil.eus" 
 password = "password"
@@ -157,6 +157,28 @@ class conexionOdoo: #Clase de conexion
             {'fields': camposVenta}
         )
         return len(ventas) #Devolvemos el numero de ventas existentes
+
+	
+    #Metodo para ver las ventas del mes
+    def get_detalleVenta(self,mes,year): #Filtro por fecha y año de ventas del mes
+        uid=self.login()
+        hoy=datetime.now()
+        if not mes: #Controlo por si no se ingresa ninguna fecha ni año
+            mes=hoy.month
+        if not year:
+            year=hoy.year
+        fechaInicio=f"{year}-{mes:02d}-01"#Le indico y formateo desde que fecha quiero iniciar
+        fechaFin=f"{year}-{mes:02d}-31" #Le indico y formateo desde que fecha quiero finalizar
+        filtroVentas=[('date_order', '>=', fechaInicio), ('date_order', '<=', fechaFin),('state','in',['sale','done'])] #Filtro las fechas de pedidos y ven>
+        camposVenta=['id','name', 'partner_id', 'date_order', 'amount_total', 'state'] #Filtro para indicar que campos vamos a mostrar
+        ventas=self.models.execute_kw(
+            self.db,self.uid,self.password,
+            'sale.order','search_read',
+            [filtroVentas],
+            {'fields': camposVenta}
+        )
+        return ventas #Devolvemos las ventas existentes
+
     
     #Metodod para ver el total facutado 
     def get_totalFacturado(self):

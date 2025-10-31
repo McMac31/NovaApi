@@ -148,6 +148,11 @@ def ventasPndts():
 def bajoStock():
     return jsonify(odoo.get_prodStockBajo()) #Devolvemos el resultado del stock bajo
 
-
+@ventasPlano.route("/ventas/detalles", methods=["GET"])
+def detalleVenta():
+	year = request.args.get("year")
+	mes = request.args.get("month")
+	ventaDetalle = odoo.get_detalleVenta(year,mes)
+	return jsonify({"ventas":ventaDetalle})
 
     
