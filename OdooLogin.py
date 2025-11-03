@@ -1,6 +1,7 @@
 import xmlrpc.client #Uso de import para conectar a odoo
 import ssl #Importacion para ignorar el ssl
 from datetime import datetime
+import calendar
 
 #Campos de enlace usuario, base de datos, contraseña
 url = "https://odootechsolutions.duckdns.org"
@@ -138,47 +139,58 @@ class conexionOdoo: #Clase de conexion
         [[id]]                             
         )
     
-    #Metodo para ver las ventas del mes
-    def get_NumventasMes(self,mes,year): #Filtro por fecha y año de ventas del mes
-        uid=self.login()
-        hoy=datetime.now() 
-        if not mes: #Controlo por si no se ingresa ninguna fecha ni año 
-            mes=hoy.month
+   #Metodo para ver las ventas del mes
+    def get_NumventasMes(self, mes, year):  #Filtro por fecha y año de ventas del mes
+        uid = self.login()
+        hoy = datetime.now()
+        if not mes:  #Controlo por si no se ingresa ninguna fecha ni año 
+            mes = hoy.month
         if not year:
-            year=hoy.year
-        fechaInicio=f"{year}-{mes:02d}-01"#Le indico y formateo desde que fecha quiero iniciar
-        fechaFin=f"{year}-{mes:02d}-31" #Le indico y formateo desde que fecha quiero finalizar
-        filtroVentas=[('date_order', '>=', fechaInicio), ('date_order', '<=', fechaFin),('state','in',['sale','done'])] #Filtro las fechas de pedidos y ventra completada
-        camposVenta=['id','name', 'partner_id', 'date_order', 'amount_total', 'state'] #Filtro para indicar que campos vamos a mostrar
-        ventas=self.models.execute_kw(
-            self.db,self.uid,self.password,
+            year = hoy.year
+        # Calculamos el último día del mes para evitar errores de fechas inválidas
+        ultimo_dia = calendar.monthrange(year, mes)[1]
+        fechaInicio = f"{year}-{mes:02d}-01"  #Le indico y formateo desde que fecha quiero iniciar
+        fechaFin    = f"{year}-{mes:02d}-{ultimo_dia:02d}"  #Le indico y formateo hasta el último día real del mes
+        filtroVentas = [
+            ('date_order', '>=', fechaInicio),
+            ('date_order', '<=', fechaFin),
+            ('state','in',['sale','done'])
+        ]  #Filtro las fechas de pedidos y venta completada
+        camposVenta = ['id','name', 'partner_id', 'date_order', 'amount_total', 'state']  #Filtro para indicar que campos vamos a mostrar
+        ventas = self.models.execute_kw(
+            self.db, self.uid, self.password,
             'sale.order','search_read',
             [filtroVentas],
             {'fields': camposVenta}
         )
-        return len(ventas) #Devolvemos el numero de ventas existentes
+        return len(ventas)  #Devolvemos el numero de ventas existentes
 
 	
-    #Metodo para ver las ventas del mes
-    def get_detalleVenta(self,mes,year): #Filtro por fecha y año de ventas del mes
-        uid=self.login()
-        hoy=datetime.now()
-        if not mes: #Controlo por si no se ingresa ninguna fecha ni año
-            mes=hoy.month
+    #Metodo para ver las ventas del mes con detalle
+    def get_detalleVenta(self, mes, year):  #Filtro por fecha y año de ventas del mes
+        uid = self.login()
+        hoy = datetime.now()
+        if not mes:  #Controlo por si no se ingresa ninguna fecha ni año
+            mes = hoy.month
         if not year:
-            year=hoy.year
-        fechaInicio=f"{year}-{mes:02d}-01"#Le indico y formateo desde que fecha quiero iniciar
-        fechaFin=f"{year}-{mes:02d}-31" #Le indico y formateo desde que fecha quiero finalizar
-        filtroVentas=[('date_order', '>=', fechaInicio), ('date_order', '<=', fechaFin),('state','in',['sale','done'])] #Filtro las fechas de pedidos y ven>
-        camposVenta=['id','name', 'partner_id', 'date_order', 'amount_total', 'state'] #Filtro para indicar que campos vamos a mostrar
-        ventas=self.models.execute_kw(
-            self.db,self.uid,self.password,
+            year = hoy.year
+        # Calculamos el último día del mes
+        ultimo_dia = calendar.monthrange(year, mes)[1]
+        fechaInicio = f"{year}-{mes:02d}-01"  #Le indico y formateo desde que fecha quiero iniciar
+        fechaFin    = f"{year}-{mes:02d}-{ultimo_dia:02d}"  #Le indico y formateo hasta el último día real del mes
+        filtroVentas = [
+            ('date_order', '>=', fechaInicio),
+            ('date_order', '<=', fechaFin),
+            ('state','in',['sale','done'])
+        ]  #Filtro las fechas de pedidos y venta completada
+        camposVenta = ['id','name', 'partner_id', 'date_order', 'amount_total', 'state']  #Filtro para indicar que campos vamos a mostrar
+        ventas = self.models.execute_kw(
+            self.db, self.uid, self.password,
             'sale.order','search_read',
             [filtroVentas],
             {'fields': camposVenta}
         )
-        return ventas #Devolvemos las ventas existentes
-
+        return ventas  #Devolvemos las ventas existentes
     
     #Metodod para ver el total facutado 
     def get_totalFacturado(self):
@@ -220,7 +232,7 @@ class conexionOdoo: #Clase de conexion
         return self.models.execute_kw(
         self.db, uid, self.password,
         'product.product', 'search_read',
-        [[('qty_available', '<=', 2)]], #Indicamos la condicion para considerar un producto con stock Bajo
+        [[('qty_available', '<=', 5)]], #Indicamos la condicion para considerar un producto con stock Bajo
         {'fields': campos}) #Devolvemos los valores y campos que cumplan la condicion
     
         #Metodo para obtener lista de clientes

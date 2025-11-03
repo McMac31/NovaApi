@@ -152,7 +152,7 @@ def bajoStock():
 def detalleVenta():
 	year = request.args.get("year")
 	mes = request.args.get("month")
-	ventaDetalle = odoo.get_detalleVenta(year,mes)
+	ventaDetalle = odoo.get_detalleVenta(mes,year)
 	return jsonify({"ventas":ventaDetalle})
 
     
