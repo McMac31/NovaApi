@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify,request
 from OdooLogin import conexionOdoo
+from auth import require_jwt,_obtener_token_de_request, verificar_token
 
 #Se divide cada uno en blueprints para mejor organizacion
 clientesPlano= Blueprint('clientes', __name__)
@@ -11,6 +12,7 @@ odoo=conexionOdoo()
 #Metodo GET para ver clientes 
 #CLIENTES
 @clientesPlano.route("/clientes",methods=["GET"]) #Establecemos metodo y ruta
+@require_jwt #Pedir Token
 def listadoCliente():
     try: #Control de excepciones
         Clientes=odoo.get_clientes()  #Llamada a metodo creado en OdooLogin
@@ -21,6 +23,7 @@ def listadoCliente():
     
 #Metodo Post para añadir y subir un nuevo contacto a odoo
 @clientesPlano.route("/clientes", methods=["POST"] ) #Establecemos metodo y ruta
+@require_jwt
 def crear_cliente():
     data=request.get_json() #Metodo para buscar claves y valores
     nombre=data.get("name") #Especificamos que clave buscamos
@@ -35,6 +38,7 @@ def crear_cliente():
     
 #Metodo para borrar un cliente en base de su id el cual podemos ver en el get
 @clientesPlano.route("/clientes/<int:id>", methods=["DELETE"]) #Establecemos el metodo delete y la variable id que sera la que se eliminara
+@require_jwt
 def eliminarCliente(id):
     try: #Control de excepciones
         eliminado=odoo.eliminar_cliente(id) #Llamada a metodo creado en OdooLogin
@@ -47,6 +51,7 @@ def eliminarCliente(id):
 
 #Metodo Put para cambiar un dato de un cliente ya creado en base de su id
 @clientesPlano.route("/clientes/<int:id>", methods=["PUT"]) #Establecemos metodo put para editar y la variable id para el que sera editado
+@require_jwt
 def editarCliente(id):
     try: #Controlamos excepciones
         data = request.get_json()  
@@ -62,6 +67,7 @@ def editarCliente(id):
 
 #Ver clientes destacados
 @clientesPlano.route("/clientes/destacados",methods=["GET"])
+@require_jwt
 def Destacados():
     try: #Control de excepciones 
         Destacados=odoo.get_clientesDestacados()  #Llamada a metodo creado en OdooLogin
@@ -73,6 +79,7 @@ def Destacados():
 #CONTACTOS
 #Ver lista de contactos
 @contactosPlano.route("/contactos", methods=["GET"]) #Metodo para ver los contactos
+@require_jwt
 def listaContactos():
     try: #Control de excepciones
         Contactos=odoo.get_contactos()  #Llamada a metodo creado en OdooLogin
@@ -83,6 +90,7 @@ def listaContactos():
     
 #Añadir contacto nuevo
 @contactosPlano.route("/contactos", methods=["POST"]) #Metodo para crear contacto nuevo
+@require_jwt
 def crear_contacto():
     data=request.get_json()
     nombre=data.get("name")
@@ -97,6 +105,7 @@ def crear_contacto():
 
 #Eliminar contacto 
 @contactosPlano.route("/contactos/<int:id>", methods=["DELETE"]) #Le pasamos el metodo a utilizar en este caso DELETE y la variable
+@require_jwt
 def eliminarContacto(id):
     try: #Control de excepciones
         eliminado=odoo.eliminar_contacto(id) #Llamada a metodo creado en OdooLogin
@@ -109,6 +118,7 @@ def eliminarContacto(id):
 
 #Editar contacto
 @contactosPlano.route("/contactos/<int:id>", methods=["PUT"])
+@require_jwt
 def editarContacto(id):
     try: #Control de excepcion
         data = request.get_json()  
@@ -125,6 +135,7 @@ def editarContacto(id):
  #VENTAS 
 #Ver num ventas por mes
 @ventasPlano.route("/ventas",methods=["GET"]) #Aqui cambia el .route ya que como estamos usando Blueprints, cambiamos la ruta para tener mejor organizado la seccion de contactos y ventas
+@require_jwt
 def ventasMes():
     year=request.args.get("year")
     mes=request.args.get("month") #Buscamos con el request los datos solicitados
@@ -132,23 +143,27 @@ def ventasMes():
     return jsonify({"num_ventas": num_ventas}) #Devolvemos el resultado del metodo
 
 #Ver total de ventas
-@ventasPlano.route("/ventas/total",methods=["GET"]) #Le indicamos la ruta en la que mostraremos el todoal
+@ventasPlano.route("/ventas/total",methods=["GET"]) #Le indicamos la ruta en la que mostraremos el total
+@require_jwt
 def totalFacturado():
     facturado=odoo.get_totalFacturado() #Metemos dentro de la variable el resultado del metodo
     return jsonify({"Total Facturado": facturado}) #Devolvemos el resultado
     
 #Ver pendientes de envio
 @ventasPlano.route("/ventas/pendientes",methods=["GET"])
+@require_jwt
 def ventasPndts():
     ventasPendientes=odoo.get_pedidosPendientes() #Metemos dentro de la variable el resultado del metodo
     return jsonify(ventasPendientes) #Devolvemos el resultado
 
 #Ver productos con stock bajo
 @ventasPlano.route("/ventas/stockbajo",methods=["GET"])
+@require_jwt
 def bajoStock():
     return jsonify(odoo.get_prodStockBajo()) #Devolvemos el resultado del stock bajo
 
 @ventasPlano.route("/ventas/detalles", methods=["GET"])
+@require_jwt
 def detalleVenta():
 	year = request.args.get("year")
 	mes = request.args.get("month")
