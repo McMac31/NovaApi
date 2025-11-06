@@ -43,7 +43,7 @@ def login():
             "uid": int(uid),
             "username": username,
             "iat": int(now.timestamp()),                             # iat como entero UTC
-            "exp": int((now + timedelta(hours=24)).timestamp())     # exp como entero UTC
+            "exp": int((now + timedelta(hours=72)).timestamp())     # exp como entero UTC
         }
         token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
         if isinstance(token, bytes):
