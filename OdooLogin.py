@@ -84,11 +84,10 @@ class conexionOdoo: #Clase de conexion
     
 
 #Ver contactos
-    # --- MÉTODO MODIFICADO ---
     def get_contactos(self):
         uid= self.login()
         
-        # --- MODIFICADO: Añadimos 'id' y el campo de imagen de Odoo 'image_1920'
+        #Añadimos 'id' y el campo de imagen de Odoo 'image_1920'
         fields_to_read = ['id', 'name', 'email', 'image_1920']
         
         contactos = self.models.execute_kw(self.db,self.uid,self.password,
@@ -103,7 +102,6 @@ class conexionOdoo: #Clase de conexion
             
         return contactos
     
-    # --- ¡NUEVO MÉTODO AÑADIDO! ---
     def get_contacto_por_id(self, id):
         """
         Obtiene un solo contacto por su ID.
@@ -127,10 +125,10 @@ class conexionOdoo: #Clase de conexion
         except Exception as e:
             print(f"[ERROR] get_contacto_por_id Odoo (id: {id}):", e)
             raise e
-    # --- FIN NUEVO MÉTODO ---
+
         
     #Metodo para añadir contacto
-    # --- MÉTODO MODIFICADO ---
+
     def add_contacto(self, nombre, email, foto=None): # Añadimos 'foto' como argumento
         uid= self.login()
         nuevo_contacto={ #Metemos los datos a ingresar 
@@ -138,7 +136,7 @@ class conexionOdoo: #Clase de conexion
             'email':f'{email}'
         }
         
-        # --- MODIFICADO: Si la app envía 'foto', lo mapeamos a 'image_1920'
+        #  Si la app envía 'foto', lo mapeamos a 'image_1920'
         if foto:
             nuevo_contacto['image_1920'] = foto
         
@@ -149,7 +147,6 @@ class conexionOdoo: #Clase de conexion
         )
     
     #Metodo para actualizar contacto
-    # --- MÉTODO MODIFICADO ---
     def actualizar_contacto(self,id, valores: dict):
         uid= self.login()
         
@@ -162,7 +159,7 @@ class conexionOdoo: #Clase de conexion
         if 'email' in valores:
             vals_odoo['email'] = valores['email']
         
-        # --- MODIFICADO: Mapeamos 'foto' (de la app) a 'image_1920' (de Odoo)
+        # ---  Mapeamos 'foto' (de la app) a 'image_1920' (de Odoo)s
         if 'foto' in valores and valores['foto']:
             vals_odoo['image_1920'] = valores['foto']
         
