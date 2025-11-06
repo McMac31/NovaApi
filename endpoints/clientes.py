@@ -88,6 +88,24 @@ def listaContactos():
         print("[ERROR] listadoContactos:", e)
         return  jsonify({"Error listando contactos": str(e)}), 500
     
+# --- ¡NUEVO ENDPOINT AÑADIDO! ---
+# Metodo GET para ver UN contacto por ID (Soluciona el 405)
+@contactosPlano.route("/contactos/<int:id>", methods=["GET"])
+@require_jwt
+def detalleContacto(id):
+    try:
+        # Llamamos al nuevo método 'get_contacto_por_id' de OdooLogin.py
+        contacto = odoo.get_contacto_por_id(id) 
+        if contacto:
+            # Devuelve el contacto encontrado
+            return jsonify(contacto), 200
+        else:
+            return jsonify({"error": "Contacto no encontrado"}), 404
+    except Exception as e:
+        print(f"[ERROR] detalleContacto (id: {id}):", e)
+        return  jsonify({"Error obteniendo contacto": str(e)}), 500
+# --- FIN DE NUEVO ENDPOINT ---
+
 #Añadir contacto nuevo
 @contactosPlano.route("/contactos", methods=["POST"]) #Metodo para crear contacto nuevo
 @require_jwt
@@ -95,10 +113,19 @@ def crear_contacto():
     data=request.get_json()
     nombre=data.get("name")
     email=data.get("email")
+    
+    # --- MODIFICACIÓN: AÑADIDO CAMPO FOTO ---
+    foto=data.get("foto") # Recibimos el string Base64 (o None)
+    # --- FIN MODIFICACIÓN ---
+
     if not nombre or not email: #Si no se ingresa ningnun dato devolvemos error
         return jsonify({"error": "No se ha introducido ningun dato"}), 400
     try: #Control de excepciones
-        nuevo_id=odoo.add_contacto(nombre,email) #Llamamos metodo creado y le pasamos los parametros capturados
+        
+        # --- MODIFICACIÓN: Pasar la foto al método ---
+        nuevo_id=odoo.add_contacto(nombre, email, foto)
+        # --- FIN MODIFICACIÓN ---
+
         return jsonify({"Mensaje":"Nuevo contacto creado con exito","id":nuevo_id}),201 #Mensaje de extio
     except Exception as e: #Capturamos excepcion
         return jsonify({"error":str(e)}),500 #Devolvemos mensaje de error
@@ -124,7 +151,12 @@ def editarContacto(id):
         data = request.get_json()  
         if not data: #Control de que se metan datos a actualizar en el json
             return jsonify({"error": "No se enviaron datos"}), 400
+        
+        # --- NOTA: ESTO YA ESTÁ BIEN ---
+        # 'data' contendrá el campo 'foto' si el frontend lo envía.
+        # El método 'actualizar_contacto' de OdooLogin se encarga de mapearlo.
         actualizado = odoo.actualizar_contacto(id, data) #Llamada a metodo creado en OdooLogin
+        
         if actualizado: #Si el metodo se ejecuta correctamente devolvemos mensaje de exito
             return jsonify({"message": f"Cliente {id} actualizado correctamente"}), 200
         else:
@@ -169,5 +201,3 @@ def detalleVenta():
 	mes = request.args.get("month")
 	ventaDetalle = odoo.get_detalleVenta(mes,year)
 	return jsonify({"ventas":ventaDetalle})
-
-    

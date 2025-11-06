@@ -62,8 +62,8 @@ class conexionOdoo: #Clase de conexion
         if not clientes: #Control sobre si el cliente existe o no
             return False
         return self.models.execute_kw(self.db, self.uid,self.password, 
-                 'res.partner', 'write', #Si el cliente existe 
-                 [[id], valores]) #Re escribimos sus datos basado en el ID que se ha pasado
+                'res.partner', 'write', #Si el cliente existe 
+                [[id], valores]) #Re escribimos sus datos basado en el ID que se ha pasado
     
     #Metodo para eliminar clientes por id
     def eliminar_cliente(self,id):
@@ -79,47 +79,110 @@ class conexionOdoo: #Clase de conexion
         return self.models.execute_kw(self.db,self.uid,self.password,
         'res.partner', #Si el cliente existe 
         'unlink', #Elimina el cliente mediante el ID pasado anteriormente
-        [[id]]                             
+        [[id]]                     
         )
     
 
 #Ver contactos
+    # --- MÉTODO MODIFICADO ---
     def get_contactos(self):
         uid= self.login()
-        return self.models.execute_kw(self.db,self.uid,self.password,
+        
+        # --- MODIFICADO: Añadimos 'id' y el campo de imagen de Odoo 'image_1920'
+        fields_to_read = ['id', 'name', 'email', 'image_1920']
+        
+        contactos = self.models.execute_kw(self.db,self.uid,self.password,
         'res.partner', #Busca dentro de contactos
         'search_read', #Metodo para buscar y leer contactos
         [[]],
-        {'fields':['name', 'email']}) #Campos a buscar
+        {'fields': fields_to_read}) #Campos a buscar
+        
+        # Renombramos 'image_1920' a 'foto' para que coincida con el frontend
+        for c in contactos:
+            c['foto'] = c.pop('image_1920', None) # Si no hay foto, devuelve None
+            
+        return contactos
     
-       #Metodo para añadir contacto
-    def add_contacto(self,nombre,email): #Coge datos de entrada para añadir un nuevo contacto
+    # --- ¡NUEVO MÉTODO AÑADIDO! ---
+    def get_contacto_por_id(self, id):
+        """
+        Obtiene un solo contacto por su ID.
+        """
+        uid = self.login()
+        try:
+            fields_to_read = ['id', 'name', 'email', 'image_1920']
+            
+            contacto_data = self.models.execute_kw(
+                self.db, self.uid, self.password,
+                'res.partner', 'search_read',
+                [[['id', '=', id]]], {'fields': fields_to_read, 'limit': 1}
+            )
+            if not contacto_data:
+                return None
+            
+            contacto = contacto_data[0]
+            # Renombramos el campo de imagen para que coincida con el frontend
+            contacto['foto'] = contacto.pop('image_1920', None)
+            return contacto
+        except Exception as e:
+            print(f"[ERROR] get_contacto_por_id Odoo (id: {id}):", e)
+            raise e
+    # --- FIN NUEVO MÉTODO ---
+        
+    #Metodo para añadir contacto
+    # --- MÉTODO MODIFICADO ---
+    def add_contacto(self, nombre, email, foto=None): # Añadimos 'foto' como argumento
         uid= self.login()
         nuevo_contacto={ #Metemos los datos a ingresar 
             'name':f'{nombre}',
             'email':f'{email}'
         }
+        
+        # --- MODIFICADO: Si la app envía 'foto', lo mapeamos a 'image_1920'
+        if foto:
+            nuevo_contacto['image_1920'] = foto
+        
         return self.models.execute_kw(self.db,self.uid,self.password,
         'res.partner',
         'create', #Metodo para crear contacto
         [nuevo_contacto] #Crea el contacto en base a los datos pasados
         )
     
-        #Metodo para actualizar contacto
+    #Metodo para actualizar contacto
+    # --- MÉTODO MODIFICADO ---
     def actualizar_contacto(self,id, valores: dict):
         uid= self.login()
-        filtroContacto=[('id', '=', id)] #Establecemos un filtro para que busque por ID
+        
+        # Preparamos el diccionario de valores para Odoo
+        vals_odoo = {}
+        
+        # Mapeamos los campos de la App al nombre real del campo en Odoo
+        if 'name' in valores:
+            vals_odoo['name'] = valores['name']
+        if 'email' in valores:
+            vals_odoo['email'] = valores['email']
+        
+        # --- MODIFICADO: Mapeamos 'foto' (de la app) a 'image_1920' (de Odoo)
+        if 'foto' in valores and valores['foto']:
+            vals_odoo['image_1920'] = valores['foto']
+        
+        if not vals_odoo:
+            return False # No hay nada que actualizar
+            
+        filtroContacto=[('id', '=', id)] 
         contacto= self.models.execute_kw(self.db,self.uid,self.password,
         'res.partner',
-        'search_read', #Metodo para buscar el contacto
-         [filtroContacto], #Por el id que le pasamos anteriormente
-        {'fields':['name', 'email']}
+        'search', # Usamos 'search' simple para verificar existencia
+         [filtroContacto],
+         {'limit': 1}
         )
         if not contacto: #Si el contacto no exite devolvemos false
             return False
-        return self.models.execute_kw(self.db, self.uid,self.password, #Si existe 
-                 'res.partner', 'write', #Ejecutamos la accion de escribir los datos nuevos al cliente
-                 [[id], valores]) #Mediante id
+            
+        # Si existe, actualizamos con los valores mapeados
+        return self.models.execute_kw(self.db, self.uid,self.password, 
+                'res.partner', 'write',
+                [[id], vals_odoo]) # Usamos vals_odoo en lugar de 'valores'
     
     #Metodo para eliminar contacto por id
     def eliminar_contacto(self,id):
@@ -127,26 +190,31 @@ class conexionOdoo: #Clase de conexion
         filtroContacto=[('id', '=', id)] #Establecemos un filtro para que busque por ID
         contacto= self.models.execute_kw(self.db,self.uid,self.password,
         'res.partner',
-        'search_read',#Metodo para buscar el contacto
+        'search',#Metodo para buscar el contacto
          [filtroContacto], #Por el id que le pasamos anteriormente
-        {'fields':['name', 'email']}
+         {'limit': 1}
         )
         if not contacto: #Si el contacto no exite devolvemos false
             return False
         return self.models.execute_kw(self.db,self.uid,self.password,
         'res.partner',
         'unlink', #Ejecutamos el metodo de eliminar el contacto 
-        [[id]]                             
+        [[id]]                    
         )
     
    #Metodo para ver las ventas del mes
     def get_NumventasMes(self, mes, year):  #Filtro por fecha y año de ventas del mes
         uid = self.login()
         hoy = datetime.now()
-        if not mes:  #Controlo por si no se ingresa ninguna fecha ni año 
+        
+        # Convertir mes y year a enteros
+        try:
+            mes = int(mes) if mes else hoy.month
+            year = int(year) if year else hoy.year
+        except ValueError:
             mes = hoy.month
-        if not year:
             year = hoy.year
+            
         # Calculamos el último día del mes para evitar errores de fechas inválidas
         ultimo_dia = calendar.monthrange(year, mes)[1]
         fechaInicio = f"{year}-{mes:02d}-01"  #Le indico y formateo desde que fecha quiero iniciar
@@ -165,15 +233,19 @@ class conexionOdoo: #Clase de conexion
         )
         return len(ventas)  #Devolvemos el numero de ventas existentes
 
-	
+    
     #Metodo para ver las ventas del mes con detalle
     def get_detalleVenta(self, mes, year):  #Filtro por fecha y año de ventas del mes
         uid = self.login()
         hoy = datetime.now()
-        if not mes:  #Controlo por si no se ingresa ninguna fecha ni año
+        
+        try:
+            mes = int(mes) if mes else hoy.month
+            year = int(year) if year else hoy.year
+        except ValueError:
             mes = hoy.month
-        if not year:
             year = hoy.year
+            
         # Calculamos el último día del mes
         ultimo_dia = calendar.monthrange(year, mes)[1]
         fechaInicio = f"{year}-{mes:02d}-01"  #Le indico y formateo desde que fecha quiero iniciar
@@ -235,7 +307,7 @@ class conexionOdoo: #Clase de conexion
         [[('qty_available', '<=', 5)]], #Indicamos la condicion para considerar un producto con stock Bajo
         {'fields': campos}) #Devolvemos los valores y campos que cumplan la condicion
     
-        #Metodo para obtener lista de clientes
+    #Metodo para obtener lista de clientes
     def get_clientesDestacados(self):
         uid= self.login()
         etiqueta="destacad" #Para que solo busque el patron destacad controlando si se añade destacados o similar
@@ -245,4 +317,3 @@ class conexionOdoo: #Clase de conexion
         'search_read', #Metodo para buscar y leer clientes
         [filtroCliente],
         {'fields':['name', 'email']}) #Campos a buscar
-                
